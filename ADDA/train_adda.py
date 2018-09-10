@@ -36,6 +36,8 @@ flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 
+flags.DEFINE_integer('iteration', 20000, '')
+
 flags.DEFINE_boolean('pre_training', True, '')
 
 def main(_):
@@ -70,6 +72,7 @@ def main(_):
         raise ValueError(
             'Source and Target datasets must have same number of classes. '
             'Are %d and %d' % (num_source_classes, num_target_classes))
+
     ####################
     # Define the model #
     ####################
