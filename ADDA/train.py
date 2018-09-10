@@ -100,11 +100,12 @@ def main(_):
     threads = tf.train.start_queue_runners(sess=sess, coord=coord)
     sess.run(tf.global_variables_initializer())
 
-    #Train first step - supervised training for initialize
-    if FLAGS.pre_training:
-        return
+    if weights:
 
-    #Train second step -
+
+    coord.request_stop()
+    coord.join(threads)
+    sess.close()
 
     return
 
