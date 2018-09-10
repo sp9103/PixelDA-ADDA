@@ -7,6 +7,7 @@ import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
 from data_factory import dataset_factory
+import Preprocessing
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -53,6 +54,7 @@ def main(_):
         FLAGS.target_dataset, 'train', FLAGS.dataset_dir, FLAGS.num_readers,
         32, FLAGS.num_preprocessing_threads)
     num_target_classes = target_dataset.num_classes
+    target_images = Preprocessing.preprocessing(target_images)
 
     source_dataset = dataset_factory.get_dataset(
         FLAGS.source_dataset,
