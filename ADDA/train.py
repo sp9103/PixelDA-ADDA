@@ -41,6 +41,8 @@ flags.DEFINE_integer(
 
 flags.DEFINE_integer('iteration', 20000, '')
 
+flags.DEFINE_integer('snapshot', 5000, '')
+
 flags.DEFINE_float('lr', 1e-4, '')
 
 def main(_):
@@ -126,7 +128,7 @@ def main(_):
             lr = sess.run(lr_var.assign(lr * 0.1))
             logging.info('Changed learning rate to {:.0e}'.format(lr))
             bar.set_description('{} (lr: {:.0e})'.format('LeNet_mnist', lr))
-        if (i + 1) % snapshot == 0:
+        if (i + 1) % FLAGS.snapshot == 0:
             snapshot_path = saver.save(sess, os.path.join(output_dir, 'LeNet_mnist'),
                                        global_step=i + 1)
             logging.info('Saved snapshot to {}'.format(snapshot_path))
