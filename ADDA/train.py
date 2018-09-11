@@ -61,7 +61,7 @@ def main(_):
         FLAGS.target_dataset, 'train', FLAGS.dataset_dir, FLAGS.num_readers,
         32, FLAGS.num_preprocessing_threads)
     num_target_classes = target_dataset.num_classes
-    target_images = Preprocessing.preprocessing(target_images)
+    #target_images = Preprocessing.preprocessing(target_images)
 
     source_dataset = dataset_factory.get_dataset(
         FLAGS.source_dataset,
@@ -99,6 +99,7 @@ def main(_):
     config = tf.ConfigProto(device_count=dict(GPU=1))
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
+    img = sess.run(target_images)
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(sess=sess, coord=coord)
     sess.run(tf.global_variables_initializer())
@@ -117,7 +118,8 @@ def main(_):
     display = 10
     stepsize = None
     for i in bar:
-        loss_val, _ = sess.run([loss, step])
+        img = sess.run(target_images)
+        """loss_val, _ = sess.run([loss, step])
         losses.append(loss_val)
         if i % display == 0:
             logging.info('{:20} {:10.4f}     (avg: {:10.4f})'
@@ -131,7 +133,7 @@ def main(_):
         if (i + 1) % FLAGS.snapshot == 0:
             snapshot_path = saver.save(sess, os.path.join(output_dir, 'LeNet_mnist'),
                                        global_step=i + 1)
-            logging.info('Saved snapshot to {}'.format(snapshot_path))
+            logging.info('Saved snapshot to {}'.format(snapshot_path))"""
 
     coord.request_stop()
     coord.join(threads)
