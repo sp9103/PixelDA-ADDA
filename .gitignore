@@ -6,3 +6,5 @@ data_factory/__pycache__/mnist.cpython-35.pyc
 data_factory/__pycache__/__init__.cpython-35.pyc
 *.tfrecord
 ADDA/__pycache__/
+.idea/
+dataset

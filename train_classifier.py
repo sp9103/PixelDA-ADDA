@@ -1,14 +1,18 @@
+import logging
 import os
 import sys
-sys.path.append('../')
-#os.chdir('..') # 작업 위치 변경
 
+import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
+from collections import deque
 from tqdm import tqdm
 from data_factory import dataset_factory
-import Preprocessing
-import Classifier
+from ADDA import Preprocessing
+from ADDA import Classifier
+from ADDA import util
+
+slim = tf.contrib.slim
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -27,7 +31,7 @@ flags.DEFINE_string('source_split_name', 'train',
 flags.DEFINE_string('target_split_name', 'train',
                     'Name of the train split for the target.')
 
-flags.DEFINE_string('dataset_dir', '../',
+flags.DEFINE_string('dataset_dir', './dataset',
                     'The directory where the datasets can be found.')
 
 flags.DEFINE_integer('num_preprocessing_threads', 4,
@@ -39,7 +43,7 @@ flags.DEFINE_integer(
 
 flags.DEFINE_integer('iteration', 20000, '')
 
-flags.DEFINE_boolean('pre_training', True, '')
+flags.DEFINE_integer('snapshot', 5000, '')
 
 flags.DEFINE_float('lr', 1e-4, '')
 
@@ -47,6 +51,10 @@ def main(_):
     for path in [run_dir, checkpoint_dir]:
         if not tf.gfile.Exists(path):
             tf.gfile.MakeDirs(path)
+
+    config = tf.ConfigProto(device_count=dict(GPU=1))
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
 
     #########################
     # Preprocess the inputs #
@@ -59,7 +67,7 @@ def main(_):
         FLAGS.target_dataset, 'train', FLAGS.dataset_dir, FLAGS.num_readers,
         32, FLAGS.num_preprocessing_threads)
     num_target_classes = target_dataset.num_classes
-    target_images = Preprocessing.preprocessing(target_images)
+    #target_images = Preprocessing.preprocessing(target_images)
 
     source_dataset = dataset_factory.get_dataset(
         FLAGS.source_dataset,
@@ -89,22 +97,44 @@ def main(_):
     class_loss = tf.losses.sparse_softmax_cross_entropy(source_labels['class'], net)
     loss = tf.losses.get_total_loss()
 
-    lr_var = tf.Variable(FLAGS.lr, name='learning_rate', trainable=False)
-    optimizer = tf.train.AdamOptimizer(lr_var)
+    lr = FLAGS.lr
+    lr_var = tf.Variable(lr, name='learning_rate', trainable=False)
+    optimizer = tf.train.MomentumOptimizer(lr_var, 0.99)
     step = optimizer.minimize(loss)
-
-    config = tf.ConfigProto(device_count=dict(GPU=1))
-    config.gpu_options.allow_growth = True
-    sess = tf.Session(config=config)
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
     sess.run(tf.global_variables_initializer())
 
-    #Train first step - supervised training for initialize
-    if FLAGS.pre_training:
-        return
+    model_vars = util.collect_vars('source')
+    saver = tf.train.Saver(var_list=model_vars)
+    output_dir = os.path.join('ADDA/snapshot', 'LeNet_mnist')
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
-    #Train second step -
+    losses = deque(maxlen=10)
+    bar = tqdm(range(FLAGS.iteration))
+    bar.set_description('{} (lr: {:.0e})'.format('LeNet_mnist', lr))
+    bar.refresh()
+
+    display = 10
+    stepsize = None
+    with slim.queues.QueueRunners(sess):
+        for i in bar:
+            loss_val, _ = sess.run([loss, step])
+            losses.append(loss_val)
+            if i % display == 0:
+                logging.info('{:20} {:10.4f}     (avg: {:10.4f})'
+                            .format('Iteration {}:'.format(i),
+                                    loss_val,
+                                    np.mean(losses)))
+            if stepsize is not None and (i + 1) % stepsize == 0:
+                lr = sess.run(lr_var.assign(lr * 0.1))
+                logging.info('Changed learning rate to {:.0e}'.format(lr))
+                bar.set_description('{} (lr: {:.0e})'.format('LeNet_mnist', lr))
+            if (i + 1) % FLAGS.snapshot == 0:
+                snapshot_path = saver.save(sess, os.path.join(output_dir, 'LeNet_mnist'),
+                                           global_step=i + 1)
+                logging.info('Saved snapshot to {}'.format(snapshot_path))
+
+    sess.close()
 
     return
 
