@@ -5,7 +5,7 @@ from contextlib import ExitStack
 from collections import OrderedDict
 
 def LeNet(image,
-          is_training = False,
+          is_training = True,
           num_clasess=10,
           reuse_private=False,
           private_scope='mnist',

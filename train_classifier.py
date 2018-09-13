@@ -16,8 +16,6 @@ slim = tf.contrib.slim
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-run_dir = './model'
-checkpoint_dir = './model'
 
 flags.DEFINE_string('source_dataset', 'mnist', 'The name of the source dataset.'
                     ' If hparams="arch=dcgan", this flag is ignored.')
@@ -50,10 +48,6 @@ flags.DEFINE_float('lr', 1e-4, '')
 def main(_):
     util.config_logging()
 
-    for path in [run_dir, checkpoint_dir]:
-        if not tf.gfile.Exists(path):
-            tf.gfile.MakeDirs(path)
-
     config = tf.ConfigProto(device_count=dict(GPU=1))
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
@@ -61,16 +55,6 @@ def main(_):
     #########################
     # Preprocess the inputs #
     #########################
-    target_dataset = dataset_factory.get_dataset(
-        FLAGS.target_dataset,
-        split_name='train',
-        dataset_dir=FLAGS.dataset_dir)
-    target_images, _ = dataset_factory.provide_batch(
-        FLAGS.target_dataset, 'train', FLAGS.dataset_dir, FLAGS.num_readers,
-        32, FLAGS.num_preprocessing_threads)
-    num_target_classes = target_dataset.num_classes
-    #target_images = Preprocessing.preprocessing(target_images)
-
     source_dataset = dataset_factory.get_dataset(
         FLAGS.source_dataset,
         split_name='train',
@@ -81,17 +65,13 @@ def main(_):
         32, FLAGS.num_preprocessing_threads)
     source_labels['class'] = tf.argmax(source_labels['classes'], 1)
     del source_labels['classes']
-    if num_source_classes != num_target_classes:
-        raise ValueError(
-            'Source and Target datasets must have same number of classes. '
-            'Are %d and %d' % (num_source_classes, num_target_classes))
 
     ####################
     # Define the model #
     ####################
     net, layers = Classifier.LeNet(source_images,
                                    False,
-                                   num_target_classes,
+                                   num_source_classes,
                                    reuse_private=False,
                                    private_scope='source',
                                    reuse_shared=False,
