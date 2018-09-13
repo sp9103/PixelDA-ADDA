@@ -48,6 +48,8 @@ flags.DEFINE_integer('snapshot', 5000, '')
 flags.DEFINE_float('lr', 1e-4, '')
 
 def main(_):
+    util.config_logging()
+
     for path in [run_dir, checkpoint_dir]:
         if not tf.gfile.Exists(path):
             tf.gfile.MakeDirs(path)
