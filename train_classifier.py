@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import random
 
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -51,6 +52,12 @@ def main(_):
     config = tf.ConfigProto(device_count=dict(GPU=1))
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
+
+    seed = random.randrange(2 ** 32 - 2)
+    logging.info('Using random seed {}'.format(seed))
+    random.seed(seed)
+    np.random.seed(seed + 1)
+    tf.set_random_seed(seed + 2)
 
     #########################
     # Preprocess the inputs #

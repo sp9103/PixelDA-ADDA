@@ -54,15 +54,16 @@ def evalutation(session, net, label_batch, num_class, path, name, totalCount, In
     class_correct = np.zeros(num_class, dtype=np.int32)
     class_counts = np.zeros(num_class, dtype=np.int32)
 
-    plt.figure()
-    for i in range(16):
-        np_image = session.run(InputImg)
-        _, height, width, _ = np_image.shape
-        plt.subplot(4, 4, i + 1)
-        plt.imshow(np_image[0])
-        plt.title('%d x %d' % (height, width))
-        plt.axis('off')
-    plt.show()
+
+    # plt.figure()
+    # for i in range(16):
+    #     np_image = session.run(InputImg)
+    #     _, height, width, _ = np_image.shape
+    #     plt.subplot(4, 4, i + 1)
+    #     plt.imshow(np_image[0])
+    #     plt.title('%d x %d' % (height, width))
+    #     plt.axis('off')
+    # plt.show()
 
     for i in tqdm(range(totalCount)):
         predictions, gt = session.run([net, label_batch])
@@ -120,14 +121,14 @@ def main(_):
                     target_images)
 
         #######################################evaluate adda############################################
-        evalutation(sess,
-                    net,
-                    target_label,
-                    num_target_classes,
-                    'ADDA/snapshot',
-                    'adda_lenet_svhn_mnist',
-                    target_dataset.num_samples,
-                    target_images)
+        # evalutation(sess,
+        #             net,
+        #             target_label,
+        #             num_target_classes,
+        #             'ADDA/snapshot',
+        #             'adda_lenet_svhn_mnist',
+        #             target_dataset.num_samples,
+        #             target_images)
 
 if __name__ == '__main__':
     tf.app.run()
