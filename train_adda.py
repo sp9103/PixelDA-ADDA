@@ -40,11 +40,11 @@ flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 
-flags.DEFINE_integer('iteration', 20000, '')
+flags.DEFINE_integer('iteration', 30000, '')
 
 flags.DEFINE_integer('snapshot', 5000, '')
 
-flags.DEFINE_float('lr', 1e-4, '')
+flags.DEFINE_float('lr', 1e-5, '')
 
 def main(_):
     util.config_logging()
@@ -70,8 +70,6 @@ def main(_):
     source_images, source_labels = dataset_factory.provide_batch(
         FLAGS.source_dataset, 'train', FLAGS.dataset_dir, FLAGS.num_readers,
         32, FLAGS.num_preprocessing_threads)
-    source_label = tf.argmax(source_labels['classes'], 1)
-    del source_labels['classes']
 
     target_dataset = dataset_factory.get_dataset(
         FLAGS.target_dataset,
@@ -80,9 +78,7 @@ def main(_):
     num_target_classes = target_dataset.num_classes
     target_images, target_labels = dataset_factory.provide_batch(
         FLAGS.target_dataset, 'test', FLAGS.dataset_dir, FLAGS.num_readers,
-        1, FLAGS.num_preprocessing_threads)
-    target_label = tf.argmax(target_labels['classes'], -1)
-    del target_labels['classes']
+        32, FLAGS.num_preprocessing_threads)
 
     if num_source_classes != num_target_classes:
         raise ValueError(
@@ -166,9 +162,10 @@ def main(_):
     bar.refresh()
 
     display = 10
-    stepsize = None
+    stepsize = 10000
     with slim.queues.QueueRunners(sess):
         for i in bar:
+
             #g-step
             mapping_loss_val, _ = sess.run([mapping_loss, mapping_step])
             mapping_losses.append(mapping_loss_val)
@@ -176,6 +173,14 @@ def main(_):
             #d-step
             adversary_loss_val, _ = sess.run([adversary_loss, adversary_step])
             adversary_losses.append(adversary_loss_val)
+
+            """
+            mapping_loss_val, adversary_loss_val, _, _ = sess.run(
+                [mapping_loss, adversary_loss, mapping_step, adversary_step])
+            mapping_losses.append(mapping_loss_val)
+            adversary_losses.append(adversary_loss_val)
+            """
+
             if i % display == 0:
                 logging.info('{:20} Mapping: {:10.4f}     (avg: {:10.4f})'
                              '    Adversary: {:10.4f}     (avg: {:10.4f})'
