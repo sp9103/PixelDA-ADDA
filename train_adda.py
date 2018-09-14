@@ -40,11 +40,11 @@ flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 
-flags.DEFINE_integer('iteration', 30000, '')
+flags.DEFINE_integer('iteration', 20000, '')
 
 flags.DEFINE_integer('snapshot', 5000, '')
 
-flags.DEFINE_float('lr', 1e-5, '')
+flags.DEFINE_float('lr', 2e-4, '')
 
 def main(_):
     util.config_logging()
@@ -69,16 +69,16 @@ def main(_):
     num_source_classes = source_dataset.num_classes
     source_images, source_labels = dataset_factory.provide_batch(
         FLAGS.source_dataset, 'train', FLAGS.dataset_dir, FLAGS.num_readers,
-        32, FLAGS.num_preprocessing_threads)
+        128, FLAGS.num_preprocessing_threads)
 
     target_dataset = dataset_factory.get_dataset(
         FLAGS.target_dataset,
-        split_name='test',
+        split_name='train',
         dataset_dir=FLAGS.dataset_dir)
     num_target_classes = target_dataset.num_classes
     target_images, target_labels = dataset_factory.provide_batch(
-        FLAGS.target_dataset, 'test', FLAGS.dataset_dir, FLAGS.num_readers,
-        32, FLAGS.num_preprocessing_threads)
+        FLAGS.target_dataset, 'train', FLAGS.dataset_dir, FLAGS.num_readers,
+        128, FLAGS.num_preprocessing_threads)
 
     if num_source_classes != num_target_classes:
         raise ValueError(
@@ -106,14 +106,14 @@ def main(_):
     # adversarial network - 다차원일 때 1차원으로 펴주기 위한 것이기는하나.. 이미 벡터라서 예제에는 의미가 없다.
     source_net = tf.reshape(source_net, [-1, int(source_net.get_shape()[-1])])
     target_net = tf.reshape(target_net, [-1, int(target_net.get_shape()[-1])])
-    # 각 ft에서 올라온것을 Batch처럼 보고 사용함
-    adversary_ft = tf.concat([source_net, target_net], 0)
+    # 각 net에서 올라온것을 Batch처럼 보고 사용함
+    adversary_net = tf.concat([source_net, target_net], 0)
     source_adversary_label = tf.zeros([tf.shape(source_net)[0]], tf.int32)         #source가 들어오면 0으로 맞추게
     target_adversary_label = tf.ones([tf.shape(target_net)[0]], tf.int32)          #target이 들어오면 1로 맞추게
     adversary_label = tf.concat(
         [source_adversary_label, target_adversary_label], 0)
     adversary_logits = adversary.adversarial_discriminator(
-        adversary_ft, [500, 500])
+        adversary_net, [500, 500])
 
     #################Loss Define##########################################
     mapping_loss = tf.losses.sparse_softmax_cross_entropy(
@@ -126,7 +126,7 @@ def main(_):
     adversary_vars = util.collect_vars('adversary')
 
     lr_var = tf.Variable(FLAGS.lr, name='learning_rate', trainable=False)
-    optimizer = tf.train.MomentumOptimizer(lr_var, 0.99)
+    optimizer = tf.train.AdamOptimizer(lr_var, 0.5)
 
     mapping_step = optimizer.minimize(
         mapping_loss, var_list=list(target_vars.values()))  # adversary_ft가 잘 못맞추게 target var를 학습한다
@@ -152,17 +152,17 @@ def main(_):
     else:
         return
 
-    output_dir = os.path.join('ADDA/snapshot', 'adda_lenet_svhn_mnist')
+    output_dir = os.path.join('ADDA/snapshot', 'adda_lenet_mnist_minstm')
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     mapping_losses = deque(maxlen=10)
     adversary_losses = deque(maxlen=10)
     bar = tqdm(range(FLAGS.iteration))
-    bar.set_description('{} (lr: {:.0e})'.format('adda_lenet_svhn_mnist', FLAGS.lr))
+    bar.set_description('{} (lr: {:.0e})'.format('adda_lenet_mnist_minstm', FLAGS.lr))
     bar.refresh()
 
     display = 10
-    stepsize = 10000
+    stepsize = None
     with slim.queues.QueueRunners(sess):
         for i in bar:
 
