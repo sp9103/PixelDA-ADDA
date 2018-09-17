@@ -1,5 +1,6 @@
 import numpy as np
 import functools
+import math
 
 import tensorflow as tf
 
@@ -14,6 +15,15 @@ def create_model(target_images,
     generator = resnet_generator(source_images, target_images.shape.as_list()[1:4])
 
     #discriminator -> reuse하는 두개를 만듦. 이미지 사이즈는 커서.. 두개 겹쳐서 사용하기에는 메모리 문제가 있을지도
+    discriminator = dict()
+    discriminator['transferred_domain_logits'] = predict_domain(
+        generator,
+        is_training,
+        False)
+    discriminator['target_domain_logits']  = predict_domain(
+        target_images,
+        is_training,
+        True)
 
     #classifier
 
@@ -89,6 +99,18 @@ def lrelu(x, leakiness=0.2):
   """Relu, with optional leaky support."""
   return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
+
+def add_noise(hidden, is_training):
+    hidden = slim.dropout(
+        hidden,
+        0.9,
+        is_training=is_training,
+        scope='dropout')
+    return hidden + tf.random_normal(
+        hidden.shape.as_list(),
+        mean=0.0,
+        stddev=0.2)
+
 def predict_domain(images, is_training=False, reuse=False, scope='discriminator'):
     first_stride = 1
     with tf.variable_scope(scope, 'discriminator', [images], reuse=reuse):
@@ -105,3 +127,27 @@ def predict_domain(images, is_training=False, reuse=False, scope='discriminator'
                 normalizer_fn=None,
                 stride=first_stride,
                 scope='conv1_stride%s' % first_stride)
+            net = add_noise(net, is_training)
+
+            block_id = 2
+            while net.shape.as_list()[1] > 4:
+                num_filters = 64 * int(math.pow(2, block_id-1))
+                net = slim.conv2d(
+                    net,
+                    num_filters,
+                    stride=1,
+                    scope='conv_%s' % (block_id))
+
+                net = slim.conv2d(
+                    net, num_filters, scope='conv_%s_stride2' % block_id)
+                net = add_noise(net, is_training)
+                block_id += 1
+
+            net = slim.flatten(net)
+            net = slim.fully_connected(
+                net,
+                1,
+                normalizer_fn=None,
+                activation_fn=None,
+                scope='fc_logit_out')
+    return net
