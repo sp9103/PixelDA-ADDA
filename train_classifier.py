@@ -1,17 +1,14 @@
 import logging
 import os
-import sys
 import random
-
-import matplotlib.pyplot as plt
-import tensorflow as tf
-import numpy as np
 from collections import deque
+
+import numpy as np
+import tensorflow as tf
 from tqdm import tqdm
+
+from common import util, classifier
 from data_factory import dataset_factory
-from ADDA import Preprocessing
-from ADDA import Classifier
-from ADDA import util
 
 slim = tf.contrib.slim
 
@@ -76,7 +73,7 @@ def main(_):
     ####################
     # Define the model #
     ####################
-    net, layers = Classifier.LeNet(source_images,
+    net, layers = classifier.LeNet(source_images,
                                    False,
                                    num_source_classes,
                                    reuse_private=False,
