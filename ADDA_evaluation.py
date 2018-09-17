@@ -121,14 +121,14 @@ def main(_):
                     target_images)
 
         #######################################evaluate adda############################################
-        # evalutation(sess,
-        #             net,
-        #             target_label,
-        #             num_target_classes,
-        #             'ADDA/snapshot',
-        #             'adda_lenet_svhn_mnist',
-        #             target_dataset.num_samples,
-        #             target_images)
+        evalutation(sess,
+                     net,
+                     target_label,
+                     num_target_classes,
+                     'ADDA/snapshot',
+                     'adda_lenet_mnist_minstm',
+                     target_dataset.num_samples,
+                     target_images)
 
 if __name__ == '__main__':
     tf.app.run()
