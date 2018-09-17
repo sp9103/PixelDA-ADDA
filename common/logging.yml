@@ -16,7 +16,7 @@ formatters:
 
 handlers:
     console:
-        class: ADDA.util.TqdmHandler
+        class: common.util.TqdmHandler
         level: INFO
         formatter: color
 
