@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 from data_factory import dataset_factory
 from common import util, classifier
-from PixelDA import pixelda_model
+from PixelDA import pixelda_model, pixelda_losses
 
 slim = tf.contrib.slim
 
@@ -79,7 +79,23 @@ def main(_):
             'Source and Target datasets must have same number of classes. '
             'Are %d and %d' % (num_source_classes, num_target_classes))
 
-    pixelda_model.create_model(target_images, source_images, source_label, num_source_classes, True)
+    gen, dis, cls = pixelda_model.create_model(target_images, source_images, source_label, num_source_classes, True)
+
+    generator_vars = util.collect_vars('generator')
+    discriminator_vars = util.collect_vars('discriminator')
+    classfier_vars = util.collect_vars('classifier')
+
+    g_loss = pixelda_losses.g_step_loss(source_images,
+                                        source_label,
+                                        dis,
+                                        cls,
+                                        num_source_classes)
+    d_loss = pixelda_losses.d_step_loss(dis,
+                                        cls,
+                                        source_label,
+                                        num_source_classes)
+
+    
 
 if __name__ == '__main__':
     tf.app.run()

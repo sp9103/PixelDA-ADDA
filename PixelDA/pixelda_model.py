@@ -3,6 +3,7 @@ import functools
 import math
 
 import tensorflow as tf
+from common import classifier
 
 slim = tf.contrib.slim
 
@@ -20,14 +21,34 @@ def create_model(target_images,
         generator,
         is_training,
         False)
-    discriminator['target_domain_logits']  = predict_domain(
+    discriminator['target_domain_logits'] = predict_domain(
         target_images,
         is_training,
         True)
 
     #classifier
 
-    return
+    with tf.variable_scope('classifier'):
+        classifierDict = dict()
+        classifierDict['source_task_logits'] = classifier.LeNet(source_images,
+                                                                False,
+                                                                num_classes,
+                                                                reuse_private=False,
+                                                                private_scope='source_task_classifier',
+                                                                reuse_shared=False)
+        classifierDict['transferred_task_logits'] = classifier.LeNet(source_images,
+                                                                     False,
+                                                                     num_classes,
+                                                                     reuse_private=False,
+                                                                     private_scope='transferred_task_classifier',
+                                                                     reuse_shared=True)
+        classifierDict['target_task_logits'] = classifier.LeNet(source_images,
+                                                                False,
+                                                                num_classes,
+                                                                reuse_private=True,
+                                                                private_scope='transferred_task_classifier',
+                                                                reuse_shared=True)
+    return generator, discriminator, classifierDict
 
 def resnet_generator(images, output_shape):
     with tf.variable_scope('generator'):
