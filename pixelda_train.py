@@ -85,17 +85,35 @@ def main(_):
     discriminator_vars = util.collect_vars('discriminator')
     classfier_vars = util.collect_vars('classifier')
 
-    g_loss = pixelda_losses.g_step_loss(source_images,
-                                        source_label,
-                                        dis,
-                                        cls,
-                                        num_source_classes)
-    d_loss = pixelda_losses.d_step_loss(dis,
-                                        cls,
-                                        source_label,
-                                        num_source_classes)
+    gen_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS, 'generator')
+    dis_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS, 'discriminator')
+    cls_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS, 'classifier')
 
-    
+    gen_loss = pixelda_losses.g_step_loss(source_images,
+                                          source_label,
+                                          dis,
+                                          cls,
+                                          num_source_classes)
+    # d_loss = pixelda_losses.d_step_loss(dis,
+    #                                     cls,
+    #                                     source_label,
+    #                                     num_source_classes)
+    dis_loss = pixelda_losses.discriminator_loss(dis)
+    cls_loss = pixelda_losses.classification_loss(cls, source_label, num_source_classes)
+
+    learning_rate = tf.train.exponential_decay(
+        0.001,
+        slim.get_or_create_global_step(),
+        decay_steps=20000,
+        decay_rate=0.95,
+        staircase=True)
+
+    optimizer = tf.train.AdamOptimizer(
+        learning_rate, beta1=0.5)
+
+    dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
+    gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
+    cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
 
 if __name__ == '__main__':
     tf.app.run()

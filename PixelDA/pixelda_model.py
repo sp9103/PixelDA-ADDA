@@ -30,19 +30,19 @@ def create_model(target_images,
 
     with tf.variable_scope('classifier'):
         classifierDict = dict()
-        classifierDict['source_task_logits'] = classifier.LeNet(source_images,
+        classifierDict['source_task_logits'], _ = classifier.LeNet(source_images,
                                                                 False,
                                                                 num_classes,
                                                                 reuse_private=False,
                                                                 private_scope='source_task_classifier',
                                                                 reuse_shared=False)
-        classifierDict['transferred_task_logits'] = classifier.LeNet(source_images,
+        classifierDict['transferred_task_logits'], _ = classifier.LeNet(source_images,
                                                                      False,
                                                                      num_classes,
                                                                      reuse_private=False,
                                                                      private_scope='transferred_task_classifier',
                                                                      reuse_shared=True)
-        classifierDict['target_task_logits'] = classifier.LeNet(source_images,
+        classifierDict['target_task_logits'], _ = classifier.LeNet(source_images,
                                                                 False,
                                                                 num_classes,
                                                                 reuse_private=True,

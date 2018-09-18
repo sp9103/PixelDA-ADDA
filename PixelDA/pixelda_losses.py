@@ -32,8 +32,7 @@ def classification_loss(classifier, source_labels, num_classes):
 
     return loss
 
-# d-step에서는 discriminator를 학습시킨다.
-def d_step_loss(discriminator, classifier, source_labels, num_classes):
+def discriminator_loss(discriminator):
     # discriminator는 fake를 받아서 0로로 맞춰야 loss가 줄어든다.
     transferred_domain_loss = tf.losses.sigmoid_cross_entropy(
         multi_class_labels=tf.zeros_like(discriminator['transferred_domain_logits']),
@@ -46,7 +45,12 @@ def d_step_loss(discriminator, classifier, source_labels, num_classes):
 
     # 0.13은 논문의 수치. 논문 B.2를 확인
     total_domain_loss = (transferred_domain_loss + target_domain_loss) * 0.13
+    return total_domain_loss
 
+# d-step에서는 discriminator를 학습시킨다.
+def d_step_loss(discriminator, classifier, source_labels, num_classes):
+    # discriminator loss
+    total_domain_loss = discriminator_loss(discriminator)
     # 여기서 classification을 진짜로 학습한다.
     cls_loss = classification_loss(classifier, source_labels, num_classes)
 
