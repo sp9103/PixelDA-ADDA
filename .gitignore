@@ -9,3 +9,4 @@ ADDA/__pycache__/
 .idea/
 dataset
 ADDA/snapshot/
+*.pyc
