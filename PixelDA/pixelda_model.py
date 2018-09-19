@@ -26,8 +26,7 @@ def create_model(target_images,
         is_training,
         True)
 
-    #classifier
-
+    #classifier - each network has different input
     with tf.variable_scope('classifier'):
         classifierDict = dict()
         classifierDict['source_task_logits'], _ = classifier.LeNet(source_images,
