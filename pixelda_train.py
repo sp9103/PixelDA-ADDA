@@ -1,12 +1,13 @@
 import logging
 import os
 import random
+from collections import deque
 
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
 from data_factory import dataset_factory
-from common import util, classifier
+from common import util
 from PixelDA import pixelda_model, pixelda_losses
 
 slim = tf.contrib.slim
@@ -35,6 +36,12 @@ flags.DEFINE_integer('num_preprocessing_threads', 4,
 flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
+
+flags.DEFINE_integer('snapshot', 5000, '')
+
+flags.DEFINE_integer('iteration', 50000, '')
+
+flags.DEFINE_float('lr', 1e-3, '')
 
 def main(_):
     util.config_logging()
@@ -102,7 +109,7 @@ def main(_):
     cls_loss = pixelda_losses.classification_loss(cls, source_label, num_source_classes)
 
     learning_rate = tf.train.exponential_decay(
-        0.001,
+        FLAGS.lr,
         slim.get_or_create_global_step(),
         decay_steps=20000,
         decay_rate=0.95,
@@ -111,9 +118,59 @@ def main(_):
     optimizer = tf.train.AdamOptimizer(
         learning_rate, beta1=0.5)
 
-    dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
-    gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
-    cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
+    with tf.control_dependencies(dis_op):
+        dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
+    with tf.control_dependencies(gen_op):
+        gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
+    with tf.control_dependencies(cls_op):
+        cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
 
+    sess.run(tf.global_variables_initializer())
+
+    saver = tf.train.Saver()
+    output_dir = os.path.join('PixelDA/snapshot', 'pixelda')
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    dis_losses = deque(maxlen=10)
+    gen_losses = deque(maxlen=10)
+    cls_losses = deque(maxlen=10)
+    bar = tqdm(range(FLAGS.iteration))
+    bar.set_description('{} (lr: {:.0e})'.format('pixelda', FLAGS.lr))
+    bar.refresh()
+
+    display = 10
+    stepsize = None
+    with slim.queues.QueueRunners(sess):
+        for i in bar:
+            # d-step
+            dis_loss_val, _ = sess.run([dis_loss, dis_step])
+            dis_losses.append(dis_loss_val)
+            cls_loss_val, _ = sess.run([cls_loss, cls_step])
+            cls_losses.append(cls_loss_val)
+
+            # g-step
+            gen_loss_val, _ = sess.run([gen_loss, gen_step])
+            gen_losses.append(gen_loss_val)
+
+            if i % display == 0:
+                cur_lr = sess.run(learning_rate)
+                logging.info('learning rate : {:10.4f}'.format(cur_lr))
+                logging.info('{:20} dis loss: {:10.4f}     (avg: {:10.4f})'
+                             '    cls loss: {:10.4f}     (avg: {:10.4f})'
+                             '    gen loss: {:10.4f}     (avg: {:10.4f})'
+                             .format('Iteration {}:'.format(i),
+                                     dis_loss_val,
+                                     np.mean(dis_losses),
+                                     cls_loss_val,
+                                     np.mean(cls_losses),
+                                     gen_loss_val,
+                                     np.mean(gen_losses)))
+
+
+            if (i + 1) % FLAGS.snapshot == 0:
+                snapshot_path = saver.save(
+                    sess, os.path.join(output_dir, 'pixelda'), global_step=i + 1)
+                logging.info('Saved snapshot to {}'.format(snapshot_path))
 if __name__ == '__main__':
     tf.app.run()
