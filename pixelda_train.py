@@ -140,10 +140,7 @@ def main(_):
     bar.refresh()
 
     #tensorboard
-    tf.summary.histogram('domain_logits_transferred',
-                         tf.sigmoid(dis['transferred_domain_logits']))
-    tf.summary.histogram('domain_logits_target',
-                         tf.sigmoid(dis['target_domain_logits']))
+    writer = tf.summary.FileWriter(output_dir, sess.graph)
 
     display = 10
     stepsize = None
