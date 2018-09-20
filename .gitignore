@@ -10,3 +10,4 @@ ADDA/__pycache__/
 dataset
 ADDA/snapshot/
 *.pyc
+PixelDA/snapshot/
