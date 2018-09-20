@@ -86,7 +86,7 @@ def main(_):
             'Source and Target datasets must have same number of classes. '
             'Are %d and %d' % (num_source_classes, num_target_classes))
 
-    gen, dis, cls = pixelda_model.create_model(target_images, source_images, source_label, num_source_classes, True)
+    gen, dis, cls = pixelda_model.create_model(target_images, source_images, num_source_classes, True)
 
     generator_vars = util.collect_vars('generator')
     discriminator_vars = util.collect_vars('discriminator')
@@ -138,6 +138,12 @@ def main(_):
     bar = tqdm(range(FLAGS.iteration))
     bar.set_description('{} (lr: {:.0e})'.format('pixelda', FLAGS.lr))
     bar.refresh()
+
+    #tensorboard
+    tf.summary.histogram('domain_logits_transferred',
+                         tf.sigmoid(dis['transferred_domain_logits']))
+    tf.summary.histogram('domain_logits_target',
+                         tf.sigmoid(dis['target_domain_logits']))
 
     display = 10
     stepsize = None

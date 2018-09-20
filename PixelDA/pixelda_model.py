@@ -9,7 +9,6 @@ slim = tf.contrib.slim
 
 def create_model(target_images,
                  source_images,
-                 source_labels,
                  num_classes,
                  is_training=False):
     # generator
