@@ -52,3 +52,6 @@ def config_logging(logfile=None):
     else:
         config['handlers']['file_handler']['filename'] = logfile
     logging.config.dictConfig(config)
+
+def format_array(arr):
+    return '  '.join(['{:.3f}'.format(x) for x in arr])

@@ -35,9 +35,6 @@ flags.DEFINE_integer(
     'num_readers', 1,
     'The number of parallel readers that read data from the dataset.')
 
-def format_array(arr):
-    return '  '.join(['{:.3f}'.format(x) for x in arr])
-
 def evalutation(session, net, label_batch, num_class, path, name, totalCount, InputImg = None):
     var_dict = util.collect_vars('source_only')
     restorer = tf.train.Saver(var_list=var_dict)
@@ -70,7 +67,7 @@ def evalutation(session, net, label_batch, num_class, path, name, totalCount, In
         if predictions[0] == gt[0]:
             class_correct[gt[0]] += 1
     logging.info('Class accuracies:')
-    logging.info('    ' + format_array(class_correct / class_counts))
+    logging.info('    ' + util.format_array(class_correct / class_counts))
     logging.info('Overall accuracy:')
     logging.info('    ' + str(np.sum(class_correct) / np.sum(class_counts)))
 
