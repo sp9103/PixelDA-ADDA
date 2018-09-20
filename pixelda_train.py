@@ -110,7 +110,7 @@ def main(_):
 
     learning_rate = tf.train.exponential_decay(
         FLAGS.lr,
-        slim.get_or_create_global_step(),
+        tf.train.get_or_create_global_step(),
         decay_steps=20000,
         decay_rate=0.95,
         staircase=True)
