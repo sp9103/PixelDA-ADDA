@@ -5,10 +5,12 @@ from collections import deque
 
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from data_factory import dataset_factory
 from common import util
 from PixelDA import pixelda_model, pixelda_losses
+from tensorflow.python.tools import inspect_checkpoint as chkp
 
 slim = tf.contrib.slim
 
@@ -76,20 +78,25 @@ def main(_):
 
     gen, dis, cls = pixelda_model.create_model(target_images, source_images, source_label, num_source_classes)
 
+    cls['target_task_logits'] = tf.argmax(cls['target_task_logits'], -1)
+
     # Use the entire split by default
     num_examples = target_dataset.num_samples
 
-    sess.run(tf.global_variables_initializer())
-    output_dir = os.path.join('PixelDA/snapshot', 'pixelda')
-
     cls_var_dict = util.collect_vars('classifier')
     cls_restorer = tf.train.Saver(var_list=cls_var_dict)
-
     gen_var_dict = util.collect_vars('generator')
     gen_restorer = tf.train.Saver(var_list=gen_var_dict)
+
+    sess.run(tf.global_variables_initializer())
+    output_dir = os.path.join('PixelDA/snapshot', 'pixelda')
     if os.path.isdir(output_dir):
         weights = tf.train.latest_checkpoint(output_dir)
         logging.info('Evaluating {}'.format(weights))
+
+        # print all tensors in checkpoint file
+        # chkp.print_tensors_in_checkpoint_file(weights, tensor_name='', all_tensors=True)
+
         cls_restorer.restore(sess, weights)
         gen_restorer.restore(sess, weights)
     else:
@@ -100,16 +107,27 @@ def main(_):
     class_counts = np.zeros(num_source_classes, dtype=np.int32)
 
     # classification loss
-    for i in tqdm(range(num_examples)):
-        predictions, gt = sess.run([cls['target_task_logits'], target_label])
-        class_counts[gt[0]] += 1
-        if predictions[0] == gt[0]:
-            class_correct[gt[0]] += 1
+    with slim.queues.QueueRunners(sess):
+        plt.figure()
+        for i in range(16):
+            np_image = sess.run(gen)
+            _, height, width, _ = np_image.shape
+            plt.subplot(4, 4, i + 1)
+            plt.imshow(np_image[0])
+            plt.title('%d x %d' % (height, width))
+            plt.axis('off')
+        plt.show()
 
-    logging.info('Class accuracies:')
-    logging.info('    ' + util.format_array(class_correct / class_counts))
-    logging.info('Overall accuracy:')
-    logging.info('    ' + str(np.sum(class_correct) / np.sum(class_counts)))
+        for i in tqdm(range(num_examples)):
+            predictions, gt = sess.run([cls['target_task_logits'], target_label])
+            class_counts[gt[0]] += 1
+            if predictions[0] == gt[0]:
+                class_correct[gt[0]] += 1
+
+        logging.info('Class accuracies:')
+        logging.info('    ' + util.format_array(class_correct / class_counts))
+        logging.info('Overall accuracy:')
+        logging.info('    ' + str(np.sum(class_correct) / np.sum(class_counts)))
 
     return True
 
