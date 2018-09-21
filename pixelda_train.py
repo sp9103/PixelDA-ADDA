@@ -74,11 +74,9 @@ def main(_):
         FLAGS.target_dataset,
         split_name='test',
         dataset_dir=FLAGS.dataset_dir)
-    target_images, target_labels = dataset_factory.provide_batch(
+    target_images, _ = dataset_factory.provide_batch(
         FLAGS.target_dataset, 'test', FLAGS.dataset_dir, FLAGS.num_readers,
         32, FLAGS.num_preprocessing_threads)
-    target_label = tf.argmax(target_labels['classes'], -1)
-    del target_labels['classes']
     num_target_classes = target_dataset.num_classes
 
     if num_source_classes != num_target_classes:
