@@ -56,7 +56,7 @@ def resnet_generator(images, output_shape):
         net = resnet_stack(images, output_shape, 'resnet_stack')
     return net
 
-## value를 지정해주지 않음. 문제가 생길지는 확인해봐야함
+## value를 지정해주지 않음. 문제가 생길지는 확인해봐야함 -> scope value??
 def resnet_stack(images, output_shape, scope = None):
     with tf.variable_scope(scope, 'resnet_style_transfer'):
         with slim.arg_scope(
