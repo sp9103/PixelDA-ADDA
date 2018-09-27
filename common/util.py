@@ -58,3 +58,41 @@ def config_logging(logfile=None):
 
 def format_array(arr):
     return '  '.join(['{:.3f}'.format(x) for x in arr])
+
+
+def copyKeySet(src, dst):
+    returnDict = OrderedDict()
+
+    for dstkey, dstval in dst.items():
+        dst_scope_set = parseScope(dstkey)
+        for srckey, srcval in src.items():
+            src_scope_set = parseScope(srckey)
+
+            if src_scope_set.count('task_model') != 0:
+                src_scope_set.remove('task_model')
+            elif src_scope_set.count('transferred_task_classifier') != 0:
+                src_scope_set.remove('transferred_task_classifier')
+            else:
+                continue
+
+            dstlayername = dst_scope_set[0]
+            srclayername = src_scope_set[0]
+            dstlayerType = dst_scope_set[1]
+            srclayerType = src_scope_set[1]
+
+            if dstlayername == srclayername\
+                and dstlayerType == srclayerType:
+                returnDict[srckey] = dstval
+                break
+
+    return returnDict
+
+def parseScope(str):
+    keylist = str.split('/')
+
+    if keylist.count('classifier') != 0:
+        keylist.remove('classifier')
+    if keylist.count('target') != 0:
+        keylist.remove('target')
+
+    return keylist

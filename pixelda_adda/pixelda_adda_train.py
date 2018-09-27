@@ -1,7 +1,7 @@
 import logging
 import os
 import random
-from collections import deque
+from collections import deque, OrderedDict
 
 import numpy as np
 import tensorflow as tf
@@ -29,7 +29,7 @@ flags.DEFINE_string('source_split_name', 'train',
 flags.DEFINE_string('target_split_name', 'train',
                     'Name of the train split for the target.')
 
-flags.DEFINE_string('dataset_dir', './dataset',
+flags.DEFINE_string('dataset_dir', '../dataset',
                     'The directory where the datasets can be found.')
 
 flags.DEFINE_integer('num_preprocessing_threads', 4,
@@ -117,6 +117,7 @@ def main(_):
     cls_var = util.collect_vars('classifier')
     target_vars = util.collect_vars('target')
     adversary_vars = util.collect_vars('adversary')
+    target_vars = util.copyKeySet(cls_var, target_vars)
 
     lr_var = tf.Variable(FLAGS.lr, name='learning_rate', trainable=False)
     optimizer = tf.train.AdamOptimizer(lr_var, 0.5)

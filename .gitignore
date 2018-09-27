@@ -11,3 +11,4 @@ dataset
 ADDA/snapshot/
 *.pyc
 PixelDA/snapshot/
+pixelda_adda/snapshot/
