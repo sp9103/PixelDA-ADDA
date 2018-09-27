@@ -51,7 +51,7 @@ def main(_):
     #########################
     source_dataset = dataset_factory.get_dataset(
         FLAGS.source_dataset,
-        split_name='train',
+        split_name='test',
         dataset_dir=FLAGS.dataset_dir)
     num_source_classes = source_dataset.num_classes
     source_images, source_labels = dataset_factory.provide_batch(
@@ -76,18 +76,20 @@ def main(_):
             'Source and Target datasets must have same number of classes. '
             'Are %d and %d' % (num_source_classes, num_target_classes))
 
-    gen, dis, cls = pixelda_model.create_model(target_images, source_images, source_label, num_source_classes)
+    gen, dis, cls = pixelda_model.create_model(target_images, source_images, num_source_classes)
 
     cls['target_task_logits'] = tf.argmax(cls['target_task_logits'], -1)
+    cls['transferred_task_logits'] = tf.argmax(cls['transferred_task_logits'], -1)
+    cls['source_task_logits'] = tf.argmax(cls['source_task_logits'], -1)
 
     # Use the entire split by default
     num_examples = target_dataset.num_samples
 
-    cls_var_dict = util.collect_vars('classifier')
-    cls_restorer = tf.train.Saver(var_list=cls_var_dict)
-    gen_var_dict = util.collect_vars('generator')
-    gen_restorer = tf.train.Saver(var_list=gen_var_dict)
-
+    # cls_var_dict = util.collect_vars('classifier')
+    # cls_restorer = tf.train.Saver(var_list=cls_var_dict)
+    # gen_var_dict = util.collect_vars('generator')
+    # gen_restorer = tf.train.Saver(var_list=gen_var_dict)
+    restorer = tf.train.Saver()
     sess.run(tf.global_variables_initializer())
     output_dir = os.path.join('PixelDA/snapshot', 'pixelda')
     if os.path.isdir(output_dir):
@@ -97,8 +99,9 @@ def main(_):
         # print all tensors in checkpoint file
         # chkp.print_tensors_in_checkpoint_file(weights, tensor_name='', all_tensors=True)
 
-        cls_restorer.restore(sess, weights)
-        gen_restorer.restore(sess, weights)
+        # cls_restorer.restore(sess, weights)
+        # gen_restorer.restore(sess, weights)
+        restorer.restore(sess, weights)
     else:
         logging.info('Not Found'.format(output_dir))
         return False
@@ -110,10 +113,15 @@ def main(_):
     with slim.queues.QueueRunners(sess):
         plt.figure()
         for i in range(16):
-            np_image = sess.run(gen)
+            np_image, np_gen = sess.run([source_images, gen])
             _, height, width, _ = np_image.shape
-            plt.subplot(4, 4, i + 1)
+            plt.subplot(4, 8, 2 * i + 1)
             plt.imshow(np_image[0])
+            plt.title('%d x %d' % (height, width))
+            plt.subplot(4, 8, 2 * i + 2)
+            np_gen[0] /= 2
+            np_gen[0] += 0.5
+            plt.imshow(np_gen[0])
             plt.title('%d x %d' % (height, width))
             plt.axis('off')
         plt.show()
