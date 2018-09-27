@@ -1,14 +1,12 @@
 import logging
 import os
 import random
-import sys
 from collections import deque
 
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-sys.path.append("./")
 from ADDA import adversary
 from common import util, classifier
 from data_factory import dataset_factory
