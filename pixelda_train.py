@@ -93,6 +93,7 @@ def main(_):
     gen_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS, 'generator')
     dis_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS, 'discriminator')
     cls_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS, 'classifier')
+    up_op_total = gen_op + dis_op + cls_op + tf.trainable_variables()
 
     gen_loss = pixelda_losses.g_step_loss(source_images,
                                           source_label,
@@ -125,7 +126,7 @@ def main(_):
 
     sess.run(tf.global_variables_initializer())
 
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(var_list=up_op_total)
     output_dir = os.path.join('PixelDA/snapshot', 'pixelda')
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
