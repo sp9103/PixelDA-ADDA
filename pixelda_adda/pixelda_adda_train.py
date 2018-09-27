@@ -113,7 +113,8 @@ def main(_):
     adversary_loss = tf.losses.sparse_softmax_cross_entropy(
         adversary_label, adversary_logits)  # Adv loss는 잘 맞출 수록 낮음
 
-    source_vars = util.collect_vars('source')
+    gan_var = util.collect_vars('generator')
+    cls_var = util.collect_vars('classifier')
     target_vars = util.collect_vars('target')
     adversary_vars = util.collect_vars('adversary')
 
@@ -127,15 +128,21 @@ def main(_):
 
     # restore weights => 이 부분 수정해야함. gan, cls 로드할 수 있게
     sess.run(tf.global_variables_initializer())
-    output_dir = os.path.join('PixelDA/snapshot', 'pixelda')
+    output_dir = os.path.join('../PixelDA/snapshot', 'pixelda')
     if os.path.isdir(output_dir):
         weights = tf.train.latest_checkpoint(output_dir)
         logging.info('Restoring weights from {}:'.format(weights))
-        logging.info('    Restoring source model:')
-        for src, tgt in source_vars.items():
+        logging.info('    Restoring generator model:')
+        for src, tgt in gan_var.items():
             logging.info('        {:30} -> {:30}'.format(src, tgt.name))
-        source_restorer = tf.train.Saver(var_list=source_vars)
-        source_restorer.restore(sess, weights)
+        gen_restorer = tf.train.Saver(var_list=gan_var)
+        gen_restorer.restore(sess, weights)
+        logging.info('Restoring weights from {}:'.format(weights))
+        logging.info('    Restoring classifier model:')
+        for src, tgt in cls_var.items():
+            logging.info('        {:30} -> {:30}'.format(src, tgt.name))
+        cls_restorer = tf.train.Saver(var_list=cls_var)
+        cls_restorer.restore(sess, weights)
         logging.info('    Restoring target model:')
         for src, tgt in target_vars.items():
             logging.info('        {:30} -> {:30}'.format(src, tgt.name))
