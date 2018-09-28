@@ -6,6 +6,7 @@ from collections import OrderedDict
 import yaml
 
 import tensorflow as tf
+import numpy as np
 from tqdm import tqdm
 
 class TqdmHandler(logging.StreamHandler):
@@ -96,3 +97,39 @@ def parseScope(str):
         keylist.remove('target')
 
     return keylist
+
+def evalutation(session, net, label_batch, num_class, path, name, totalCount, InputImg = None):
+    var_dict = collect_vars('source_only')
+    restorer = tf.train.Saver(var_list=var_dict)
+    output_dir = os.path.join(path, name)
+    if os.path.isdir(output_dir):
+        weights = tf.train.latest_checkpoint(output_dir)
+        logging.info('Evaluating {}'.format(weights))
+        restorer.restore(session, weights)
+    else:
+        logging.info('Not Found'.format(output_dir))
+        return False
+
+    class_correct = np.zeros(num_class, dtype=np.int32)
+    class_counts = np.zeros(num_class, dtype=np.int32)
+
+
+    # plt.figure()
+    # for i in range(16):
+    #     np_image = session.run(InputImg)
+    #     _, height, width, _ = np_image.shape
+    #     plt.subplot(4, 4, i + 1)
+    #     plt.imshow(np_image[0])
+    #     plt.title('%d x %d' % (height, width))
+    #     plt.axis('off')
+    # plt.show()
+
+    for i in tqdm(range(totalCount)):
+        predictions, gt = session.run([net, label_batch])
+        class_counts[gt[0]] += 1
+        if predictions[0] == gt[0]:
+            class_correct[gt[0]] += 1
+    logging.info('Class accuracies:')
+    logging.info('    ' + format_array(class_correct / class_counts))
+    logging.info('Overall accuracy:')
+    logging.info('    ' + str(np.sum(class_correct) / np.sum(class_counts)))

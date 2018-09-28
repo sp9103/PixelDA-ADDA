@@ -35,44 +35,6 @@ flags.DEFINE_integer(
     'num_readers', 1,
     'The number of parallel readers that read data from the dataset.')
 
-def evalutation(session, net, label_batch, num_class, path, name, totalCount, InputImg = None):
-    var_dict = util.collect_vars('source_only')
-    restorer = tf.train.Saver(var_list=var_dict)
-    output_dir = os.path.join(path, name)
-    if os.path.isdir(output_dir):
-        weights = tf.train.latest_checkpoint(output_dir)
-        logging.info('Evaluating {}'.format(weights))
-        restorer.restore(session, weights)
-    else:
-        logging.info('Not Found'.format(output_dir))
-        return False
-
-    class_correct = np.zeros(num_class, dtype=np.int32)
-    class_counts = np.zeros(num_class, dtype=np.int32)
-
-
-    # plt.figure()
-    # for i in range(16):
-    #     np_image = session.run(InputImg)
-    #     _, height, width, _ = np_image.shape
-    #     plt.subplot(4, 4, i + 1)
-    #     plt.imshow(np_image[0])
-    #     plt.title('%d x %d' % (height, width))
-    #     plt.axis('off')
-    # plt.show()
-
-    for i in tqdm(range(totalCount)):
-        predictions, gt = session.run([net, label_batch])
-        class_counts[gt[0]] += 1
-        if predictions[0] == gt[0]:
-            class_correct[gt[0]] += 1
-    logging.info('Class accuracies:')
-    logging.info('    ' + util.format_array(class_correct / class_counts))
-    logging.info('Overall accuracy:')
-    logging.info('    ' + str(np.sum(class_correct) / np.sum(class_counts)))
-
-    return True
-
 def main(_):
     util.config_logging()
 
@@ -107,7 +69,7 @@ def main(_):
 
     with slim.queues.QueueRunners(sess):
         #######################################evaluate source only####################################
-        evalutation(sess,
+        util.evalutation(sess,
                     net,
                     target_label,
                     num_target_classes,
@@ -117,7 +79,7 @@ def main(_):
                     target_images)
 
         #######################################evaluate adda############################################
-        evalutation(sess,
+        util.evalutation(sess,
                      net,
                      target_label,
                      num_target_classes,
