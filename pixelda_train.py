@@ -124,13 +124,13 @@ def main(_):
     #with tf.control_dependencies(cls_op):
     #    cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
 
-    discriminator_vars += dis_op
-    generator_vars += gen_op
-    classfier_vars += cls_op
+    dis_var_list = dis_op + list(discriminator_vars.values())
+    gen_vars_list = gen_op + list(generator_vars.values())
+    cls_vars_list = cls_op + list(classfier_vars.values())
 
-    dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
-    gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
-    cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
+    dis_step = optimizer.minimize(dis_loss, var_list=dis_var_list)
+    gen_step = optimizer.minimize(gen_loss, var_list=gen_vars_list)
+    cls_step = optimizer.minimize(cls_loss, var_list=cls_vars_list)
 
     sess.run(tf.global_variables_initializer())
 
