@@ -117,12 +117,20 @@ def main(_):
     optimizer = tf.train.AdamOptimizer(
         learning_rate, beta1=0.5)
 
-    with tf.control_dependencies(dis_op):
-        dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
-    with tf.control_dependencies(gen_op):
-        gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
-    with tf.control_dependencies(cls_op):
-        cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
+    #with tf.control_dependencies(dis_op):
+    #    dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
+    #with tf.control_dependencies(gen_op):
+    #    gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
+    #with tf.control_dependencies(cls_op):
+    #    cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
+
+    discriminator_vars += dis_op
+    generator_vars += gen_op
+    classfier_vars += cls_op
+
+    dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
+    gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
+    cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
 
     sess.run(tf.global_variables_initializer())
 
