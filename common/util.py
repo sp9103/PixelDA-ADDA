@@ -98,8 +98,7 @@ def parseScope(str):
 
     return keylist
 
-def evalutation(session, net, label_batch, num_class, path, name, totalCount, InputImg = None):
-    var_dict = collect_vars('source_only')
+def restoreNetforEval(var_dict, path, name, session):
     restorer = tf.train.Saver(var_list=var_dict)
     output_dir = os.path.join(path, name)
     if os.path.isdir(output_dir):
@@ -110,9 +109,12 @@ def evalutation(session, net, label_batch, num_class, path, name, totalCount, In
         logging.info('Not Found'.format(output_dir))
         return False
 
+def evalutation(session, net, label_batch, num_class, path, name, totalCount, var_dict, InputImg = None):
+    if restoreNetforEval(var_dict, path, name, session) == False:
+        return False
+
     class_correct = np.zeros(num_class, dtype=np.int32)
     class_counts = np.zeros(num_class, dtype=np.int32)
-
 
     # plt.figure()
     # for i in range(16):
@@ -133,3 +135,5 @@ def evalutation(session, net, label_batch, num_class, path, name, totalCount, In
     logging.info('    ' + format_array(class_correct / class_counts))
     logging.info('Overall accuracy:')
     logging.info('    ' + str(np.sum(class_correct) / np.sum(class_counts)))
+
+    return True
