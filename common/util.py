@@ -2,6 +2,7 @@ import logging
 import logging.config
 import os.path
 from collections import OrderedDict
+from tensorflow.python import pywrap_tensorflow
 
 import yaml
 
@@ -103,11 +104,20 @@ def restoreNetforEval(var_dict, path, name, session):
     output_dir = os.path.join(path, name)
     if os.path.isdir(output_dir):
         weights = tf.train.latest_checkpoint(output_dir)
-        logging.info('Evaluating {}'.format(weights))
+        printSavedInfo(weights)
         restorer.restore(session, weights)
     else:
         logging.info('Not Found'.format(output_dir))
         return False
+
+def printSavedInfo(path, printValue = False):
+    reader = pywrap_tensorflow.NewCheckpointReader(path)
+    var_to_shape_map = reader.get_variable_to_shape_map()
+
+    for key in var_to_shape_map:
+        print("tensor_name: ", key)
+        if printValue:
+            print(reader.get_tensor(key))  # Remove this is you want to print only variable names
 
 def evalutation(session, net, label_batch, num_class, path, name, totalCount, var_dict, InputImg = None):
     if restoreNetforEval(var_dict, path, name, session) == False:
