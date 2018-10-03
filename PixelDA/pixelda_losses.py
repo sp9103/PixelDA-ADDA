@@ -20,10 +20,11 @@ def g_step_loss(source_images, source_labels, discriminator, classifier, num_cla
 def classification_loss(classifier, source_labels, num_classes):
     one_hot_labels = slim.one_hot_encoding(source_labels, num_classes)
 
-    loss = tf.losses.softmax_cross_entropy(
-        onehot_labels=one_hot_labels,
-        logits=classifier['source_task_logits'],
-        weights=0.01)
+    loss = 0
+    #loss = tf.losses.softmax_cross_entropy(
+    #    onehot_labels=one_hot_labels,
+    #    logits=classifier['source_task_logits'],
+    #    weights=0.01)
 
     loss += tf.losses.softmax_cross_entropy(
         onehot_labels=one_hot_labels,
