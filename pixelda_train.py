@@ -100,12 +100,12 @@ def main(_):
                                           dis,
                                           cls,
                                           num_source_classes)
-    # d_loss = pixelda_losses.d_step_loss(dis,
-    #                                     cls,
-    #                                     source_label,
-    #                                     num_source_classes)
-    dis_loss = pixelda_losses.discriminator_loss(dis)
-    cls_loss = pixelda_losses.classification_loss(cls, source_label, num_source_classes)
+    d_loss = pixelda_losses.d_step_loss(dis,
+                                        cls,
+                                        source_label,
+                                        num_source_classes)
+    # dis_loss = pixelda_losses.discriminator_loss(dis)
+    # cls_loss = pixelda_losses.classification_loss(cls, source_label, num_source_classes)
 
     learning_rate = tf.train.exponential_decay(
         FLAGS.lr,
@@ -117,24 +117,29 @@ def main(_):
     optimizer = tf.train.AdamOptimizer(
         learning_rate, beta1=0.5)
 
-    #with tf.control_dependencies(dis_op):
+    dstep_po = dis_op + cls_op
+    with tf.control_dependencies(dstep_po):
+        dis_step = optimizer.minimize(d_loss, var_list=list(discriminator_vars.values()) + list(classfier_vars.values()))
+    with tf.control_dependencies(gen_op):
+        gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
+    # with tf.control_dependencies(dis_op):
     #    dis_step = optimizer.minimize(dis_loss, var_list=list(discriminator_vars.values()))
-    #with tf.control_dependencies(gen_op):
+    # with tf.control_dependencies(gen_op):
     #    gen_step = optimizer.minimize(gen_loss, var_list=list(generator_vars.values()))
-    #with tf.control_dependencies(cls_op):
+    # with tf.control_dependencies(cls_op):
     #    cls_step = optimizer.minimize(cls_loss, var_list=list(classfier_vars.values()))
 
-    dis_var_list = dis_op + list(discriminator_vars.values())
-    gen_vars_list = gen_op + list(generator_vars.values())
-    cls_vars_list = cls_op + list(classfier_vars.values())
+    # dis_var_list = dis_op + list(discriminator_vars.values())
+    # gen_vars_list = gen_op + list(generator_vars.values())
+    # cls_vars_list = cls_op + list(classfier_vars.values())
 
-    dis_step = optimizer.minimize(dis_loss, var_list=dis_var_list)
-    gen_step = optimizer.minimize(gen_loss, var_list=gen_vars_list)
-    cls_step = optimizer.minimize(cls_loss, var_list=cls_vars_list)
+    # dis_step = optimizer.minimize(dis_loss, var_list=dis_var_list)
+    # gen_step = optimizer.minimize(gen_loss, var_list=gen_vars_list)
+    # cls_step = optimizer.minimize(cls_loss, var_list=cls_vars_list)
 
     sess.run(tf.global_variables_initializer())
 
-    saver = tf.train.Saver(var_list=up_op_total)
+    saver = tf.train.Saver()
     output_dir = os.path.join('PixelDA/snapshot', 'pixelda')
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -154,10 +159,13 @@ def main(_):
     with slim.queues.QueueRunners(sess):
         for i in bar:
             # d-step
-            dis_loss_val, _ = sess.run([dis_loss, dis_step])
-            dis_losses.append(dis_loss_val)
-            cls_loss_val, _ = sess.run([cls_loss, cls_step])
-            cls_losses.append(cls_loss_val)
+            # dis_loss_val, _ = sess.run([dis_loss, dis_step])
+            # dis_losses.append(dis_loss_val)
+            # cls_loss_val, _ = sess.run([cls_loss, cls_step])
+            # cls_losses.append(cls_loss_val)
+
+            dstep_loss_val, _ = sess.run([d_loss, dis_step])
+            dis_losses.append(dstep_loss_val)
 
             # g-step
             gen_loss_val, _ = sess.run([gen_loss, gen_step])
@@ -166,17 +174,13 @@ def main(_):
             if i % display == 0:
                 cur_lr = sess.run(learning_rate)
                 logging.info('learning rate : {:10.4f}'.format(cur_lr))
-                logging.info('{:20} dis loss: {:10.4f}     (avg: {:10.4f})'
-                             '    cls loss: {:10.4f}     (avg: {:10.4f})'
+                logging.info('{:20} dstep loss: {:10.4f}     (avg: {:10.4f})'
                              '    gen loss: {:10.4f}     (avg: {:10.4f})'
                              .format('Iteration {}:'.format(i),
-                                     dis_loss_val,
+                                     dstep_loss_val,
                                      np.mean(dis_losses),
-                                     cls_loss_val,
-                                     np.mean(cls_losses),
                                      gen_loss_val,
                                      np.mean(gen_losses)))
-
 
             if (i + 1) % FLAGS.snapshot == 0:
                 snapshot_path = saver.save(
