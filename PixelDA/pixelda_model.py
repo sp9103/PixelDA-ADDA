@@ -7,45 +7,63 @@ from common import classifier
 
 slim = tf.contrib.slim
 
+def batch_norm_params(is_training, batch_norm_decay):
+  return {
+      'is_training': is_training,
+      # Decay for the moving averages.
+      'decay': batch_norm_decay,
+      # epsilon to prevent 0s in variance.
+      'epsilon': 0.001,
+  }
+
 def create_model(target_images,
                  source_images,
                  num_classes,
                  is_training=False):
-    # generator
-    generator = resnet_generator(source_images, target_images.shape.as_list()[1:4])
+    with slim.arg_scope(
+            [slim.conv2d, slim.conv2d_transpose, slim.fully_connected],
+            normalizer_params=batch_norm_params(is_training,
+                                                0.9),
+            weights_initializer=tf.random_normal_initializer(
+                stddev=0.02),
+            weights_regularizer=tf.contrib.layers.l2_regularizer(
+                1e-05)):
+        with slim.arg_scope([slim.conv2d], padding='SAME'):
+            # generator
+            generator = resnet_generator(source_images, target_images.shape.as_list()[1:4])
 
-    #discriminator -> reuse하는 두개를 만듦. 이미지 사이즈는 커서.. 두개 겹쳐서 사용하기에는 메모리 문제가 있을지도
-    discriminator = dict()
-    discriminator['transferred_domain_logits'] = predict_domain(
-        generator,
-        is_training,
-        False)
-    discriminator['target_domain_logits'] = predict_domain(
-        target_images,
-        is_training,
-        True)
+            #discriminator -> reuse하는 두개를 만듦. 이미지 사이즈는 커서.. 두개 겹쳐서 사용하기에는 메모리 문제가 있을지도
+            discriminator = dict()
+            discriminator['transferred_domain_logits'] = predict_domain(
+                generator,
+                is_training,
+                False)
+            discriminator['target_domain_logits'] = predict_domain(
+                target_images,
+                is_training,
+                True)
 
-    #classifier - each network has different input
-    with tf.variable_scope('classifier'):
-        classifierDict = dict()
-        classifierDict['source_task_logits'], _ = classifier.LeNet(source_images,
-                                                                False,
-                                                                num_classes,
-                                                                reuse_private=False,
-                                                                private_scope='source_task_classifier',
-                                                                reuse_shared=False)
-        classifierDict['transferred_task_logits'], _ = classifier.LeNet(generator,
-                                                                     False,
-                                                                     num_classes,
-                                                                     reuse_private=False,
-                                                                     private_scope='transferred_task_classifier',
-                                                                     reuse_shared=True)
-        classifierDict['target_task_logits'], _ = classifier.LeNet(target_images,
-                                                                False,
-                                                                num_classes,
-                                                                reuse_private=True,
-                                                                private_scope='transferred_task_classifier',
-                                                                reuse_shared=True)
+            #classifier - each network has different input
+            with tf.variable_scope('classifier'):
+                classifierDict = dict()
+                classifierDict['source_task_logits'], _ = classifier.LeNet(source_images,
+                                                                        False,
+                                                                        num_classes,
+                                                                        reuse_private=False,
+                                                                        private_scope='source_task_classifier',
+                                                                        reuse_shared=False)
+                classifierDict['transferred_task_logits'], _ = classifier.LeNet(generator,
+                                                                             False,
+                                                                             num_classes,
+                                                                             reuse_private=False,
+                                                                             private_scope='transferred_task_classifier',
+                                                                             reuse_shared=True)
+                classifierDict['target_task_logits'], _ = classifier.LeNet(target_images,
+                                                                        False,
+                                                                        num_classes,
+                                                                        reuse_private=True,
+                                                                        private_scope='transferred_task_classifier',
+                                                                        reuse_shared=True)
     return generator, discriminator, classifierDict
 
 def resnet_generator(images, output_shape):
