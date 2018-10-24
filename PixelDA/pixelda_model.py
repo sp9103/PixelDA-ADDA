@@ -52,7 +52,7 @@ def create_model(target_images,
                                                                         reuse_private=False,
                                                                         private_scope='source_task_classifier',
                                                                         reuse_shared=False)
-                classifierDict['transferred_task_logits'], _ = classifier.LeNet(generator,
+                classifierDict['transferred_task_logits'], transLayer = classifier.LeNet(generator,
                                                                              False,
                                                                              num_classes,
                                                                              reuse_private=False,
@@ -64,7 +64,7 @@ def create_model(target_images,
                                                                         reuse_private=True,
                                                                         private_scope='transferred_task_classifier',
                                                                         reuse_shared=True)
-    return generator, discriminator, classifierDict
+    return generator, discriminator, classifierDict, transLayer
 
 def resnet_generator(images, output_shape):
     with tf.variable_scope('generator'):

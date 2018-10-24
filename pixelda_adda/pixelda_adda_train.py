@@ -41,7 +41,7 @@ flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 
-flags.DEFINE_integer('iteration', 20000, '')
+flags.DEFINE_integer('iteration', 40000, '')
 
 flags.DEFINE_integer('snapshot', 5000, '')
 
@@ -86,7 +86,7 @@ def main(_):
             'Source and Target datasets must have same number of classes. '
             'Are %d and %d' % (num_source_classes, num_target_classes))
 
-    gen, dis, cls = pixelda_model.create_model(target_images, source_images, num_source_classes)
+    gen, dis, cls, transLayer = pixelda_model.create_model(target_images, source_images, num_source_classes)
 
     target_net, target_layers = classifier.LeNet(target_images,
                                                  False,
@@ -96,6 +96,10 @@ def main(_):
                                                  reuse_shared=False,
                                                  shared_scope='target')
     source_net = cls['transferred_task_logits']
+
+    # 어떤 레이어를 비슷하게 쫒아갈 것인지 여기서 결정
+    source_net = transLayer['fc3']
+    target_net = target_layers['fc3']
 
     # adversarial network - 다차원일 때 1차원으로 펴주기 위한 것이기는하나.. 이미 벡터라서 예제에는 의미가 없다.
     source_net = tf.reshape(source_net, [-1, int(source_net.get_shape()[-1])])

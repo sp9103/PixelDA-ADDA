@@ -38,7 +38,7 @@ flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 
-flags.DEFINE_integer('iteration', 20000, '')
+flags.DEFINE_integer('iteration', 40000, '')
 
 flags.DEFINE_integer('snapshot', 5000, '')
 
@@ -100,6 +100,8 @@ def main(_):
                                                  private_scope='target',
                                                  reuse_shared=False,
                                                  shared_scope='target')
+
+    # 어떤 레이어를 비슷하게 쫒아갈 것인지 여기서 결정
 
     # adversarial network - 다차원일 때 1차원으로 펴주기 위한 것이기는하나.. 이미 벡터라서 예제에는 의미가 없다.
     source_net = tf.reshape(source_net, [-1, int(source_net.get_shape()[-1])])
