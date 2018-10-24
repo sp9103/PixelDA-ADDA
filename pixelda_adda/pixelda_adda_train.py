@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-sys.path.append("./")
+sys.path.append("../")
 from ADDA import adversary
 from common import util, classifier
 from data_factory import dataset_factory
