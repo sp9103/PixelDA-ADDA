@@ -61,6 +61,17 @@ def config_logging(logfile=None):
 def format_array(arr):
     return '  '.join(['{:.3f}'.format(x) for x in arr])
 
+def ConvertKey(src, str):
+    returnDict = OrderedDict()
+
+    for dstkey, dstval in src.items():
+        keylist = dstkey.split('/')
+        newkey = str
+        for i in range(len(keylist) - 1):
+            newkey += '/'
+            newkey += keylist[i + 1]
+        returnDict[newkey] = dstval
+    return returnDict
 
 def copyKeySet(src, dst):
     returnDict = OrderedDict()

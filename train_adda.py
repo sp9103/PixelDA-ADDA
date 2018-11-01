@@ -102,6 +102,8 @@ def main(_):
                                                  shared_scope='target')
 
     # 어떤 레이어를 비슷하게 쫒아갈 것인지 여기서 결정
+    source_net = source_layers['fc3']
+    target_net = target_layers['fc3']
 
     # adversarial network - 다차원일 때 1차원으로 펴주기 위한 것이기는하나.. 이미 벡터라서 예제에는 의미가 없다.
     source_net = tf.reshape(source_net, [-1, int(source_net.get_shape()[-1])])
@@ -124,6 +126,7 @@ def main(_):
     source_vars = util.collect_vars('source')
     target_vars = util.collect_vars('target')
     adversary_vars = util.collect_vars('adversary')
+    target_vars = util.ConvertKey(target_vars, 'source')
 
     lr_var = tf.Variable(FLAGS.lr, name='learning_rate', trainable=False)
     optimizer = tf.train.AdamOptimizer(lr_var, 0.5)
